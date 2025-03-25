@@ -73,6 +73,56 @@ def apply_custom_styling():
         background-color: #2A2A2A !important;
         border: 1px solid #00FFAA !important;
     }
+    
+    /* Document list styling */
+    .document-list {
+        margin-top: 10px;
+    }
+    
+    .document-item {
+        padding: 8px;
+        margin: 4px 0;
+        background-color: #1E1E1E;
+        border-radius: 4px;
+        border-left: 3px solid #00FFAA;
+    }
+    
+    /* File type badges */
+    .file-badge {
+        display: inline-block;
+        padding: 2px 6px;
+        border-radius: 4px;
+        font-size: 12px;
+        font-weight: bold;
+        margin-left: 6px;
+    }
+    
+    .file-badge-pdf {
+        background-color: #FF5252;
+        color: white;
+    }
+    
+    .file-badge-docx {
+        background-color: #2196F3;
+        color: white;
+    }
+    
+    .file-badge-xlsx {
+        background-color: #4CAF50;
+        color: white;
+    }
+    
+    .file-badge-txt {
+        background-color: #9E9E9E;
+        color: white;
+    }
+    
+    /* Custom document expander */
+    .document-expander {
+        border: 1px solid #3A3A3A;
+        border-radius: 5px;
+        margin-bottom: 15px;
+    }
     </style>
     """, unsafe_allow_html=True)
 
@@ -86,7 +136,7 @@ def initialize_session_state():
     
     if "message_log" not in st.session_state:
         st.session_state.message_log = [
-            {"role": "ai", "content": "Hi! I'm NOVA, your AI assistant with document intelligence. What can I do for you today? You can chat with me or upload PDF documents for analysis."}
+            {"role": "ai", "content": "Hi! I'm NOVA, your AI assistant with multi-document intelligence. What can I do for you today? You can chat with me or upload documents (PDF, DOCX, CSV, Excel, PPT, TXT, and more) for analysis."}
         ]
     
     if "processing" not in st.session_state:
@@ -97,9 +147,27 @@ def initialize_session_state():
     
     if "uploaded_files" not in st.session_state:
         st.session_state.uploaded_files = []
+        
+    if "uploaded_file_info" not in st.session_state:
+        st.session_state.uploaded_file_info = {}
     
     if "last_uploaded_file" not in st.session_state:
         st.session_state.last_uploaded_file = None
     
     if "show_uploader" not in st.session_state:
         st.session_state.show_uploader = False
+
+def display_file_badge(file_type):
+    """Generate HTML for a file type badge"""
+    # Determine badge class based on file type
+    badge_class = "file-badge"
+    if file_type.lower() in ["pdf"]:
+        badge_class += " file-badge-pdf"
+    elif file_type.lower() in ["docx", "doc"]:
+        badge_class += " file-badge-docx"
+    elif file_type.lower() in ["xlsx", "xls", "csv"]:
+        badge_class += " file-badge-xlsx"
+    else:
+        badge_class += " file-badge-txt"
+        
+    return f'<span class="{badge_class}">{file_type}</span>'

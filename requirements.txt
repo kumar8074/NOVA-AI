@@ -15,3 +15,4 @@ pandas
 openpyxl 
 pyyaml
 langchain-unstructured
+mammoth

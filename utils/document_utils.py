@@ -1,29 +1,131 @@
+# Updated document_utils.py
 import os
 import streamlit as st
 from io import BytesIO
-from langchain_community.document_loaders import PDFPlumberLoader
+import tempfile
+import pandas as pd
+import json
+import yaml
+import mammoth
+from langchain_community.document_loaders import (
+    PDFPlumberLoader,
+    TextLoader,
+    CSVLoader,
+    JSONLoader,
+    UnstructuredPowerPointLoader,
+    UnstructuredExcelLoader,
+    Docx2txtLoader,
+    UnstructuredHTMLLoader,
+    PyMuPDFLoader
+)
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 from langchain_core.vectorstores import InMemoryVectorStore
 from config import CHUNK_SIZE, CHUNK_OVERLAP
 
-def process_pdf_file(uploaded_file, vector_store):
-    """Process a PDF file and add it to the vector store"""
-    # Create a temporary file-like object
-    pdf_file = BytesIO(uploaded_file.getvalue())
+def get_file_extension(filename):
+    """Get the file extension from a filename."""
+    return os.path.splitext(filename)[1].lower()
+
+def process_document_file(uploaded_file, vector_store):
+    """Process various document file types and add them to the vector store"""
+    # Get file extension
+    file_extension = get_file_extension(uploaded_file.name)
     
-    # Save to a temporary file that PDFPlumberLoader can use
-    temp_path = f"temp_{uploaded_file.name}"
-    with open(temp_path, "wb") as f:
-        f.write(pdf_file.getvalue())
-        
-    # Use the regular PDFPlumberLoader
-    loader = PDFPlumberLoader(temp_path)
+    # Create a temporary file-like object
+    temp_dir = tempfile.mkdtemp()
+    temp_path = os.path.join(temp_dir, uploaded_file.name)
+    
     try:
-        raw_docs = loader.load()
+        # Write the file to disk temporarily
+        with open(temp_path, "wb") as f:
+            f.write(uploaded_file.getvalue())
+            
+        # Process based on file type
+        raw_docs = []
+        
+        # PDF Files
+        if file_extension in ['.pdf']:
+            loader = PDFPlumberLoader(temp_path)
+            raw_docs = loader.load()
+            
+        # Text Files
+        elif file_extension in ['.txt', '.md', '.log']:
+            loader = TextLoader(temp_path)
+            raw_docs = loader.load()
+            
+        # Microsoft Word Documents
+        elif file_extension in ['.docx']:
+            loader = Docx2txtLoader(temp_path)
+            raw_docs = loader.load()
+            
+        # Legacy Word Documents - requires extra handling
+        elif file_extension in ['.doc']:
+            # Convert DOC to DOCX-like format using mammoth
+            with open(temp_path, "rb") as docx_file:
+                result = mammoth.convert_to_html(docx_file)
+                text = result.value
+            
+            # Create a document directly
+            from langchain_core.documents import Document
+            raw_docs = [Document(page_content=text, metadata={"source": uploaded_file.name})]
+            
+        # CSV Files
+        elif file_extension in ['.csv']:
+            loader = CSVLoader(temp_path)
+            raw_docs = loader.load()
+            
+        # Excel Files
+        elif file_extension in ['.xlsx', '.xls']:
+            loader = UnstructuredExcelLoader(temp_path)
+            raw_docs = loader.load()
+            
+        # PowerPoint Files
+        elif file_extension in ['.ppt', '.pptx']:
+            loader = UnstructuredPowerPointLoader(temp_path)
+            raw_docs = loader.load()
+            
+        # JSON Files
+        elif file_extension in ['.json']:
+            # For JSON files, use a simple approach that works with various structures
+            with open(temp_path, 'r') as file:
+                json_data = json.load(file)
+            
+            # Convert to string representation for simple processing
+            text = json.dumps(json_data, indent=2)
+            from langchain_core.documents import Document
+            raw_docs = [Document(page_content=text, metadata={"source": uploaded_file.name})]
+            
+        # YAML Files
+        elif file_extension in ['.yaml', '.yml']:
+            # Similar approach for YAML files
+            with open(temp_path, 'r') as file:
+                yaml_data = yaml.safe_load(file)
+            
+            # Convert to string representation
+            text = yaml.dump(yaml_data, default_flow_style=False)
+            from langchain_core.documents import Document
+            raw_docs = [Document(page_content=text, metadata={"source": uploaded_file.name})]
+            
+        # HTML Files
+        elif file_extension in ['.html', '.htm']:
+            loader = UnstructuredHTMLLoader(temp_path)
+            raw_docs = loader.load()
+            
+        else:
+            # For unsupported file types, try a generic text loader as fallback
+            try:
+                loader = TextLoader(temp_path)
+                raw_docs = loader.load()
+            except Exception as e:
+                raise ValueError(f"Unsupported file type: {file_extension}")
         
         # Store the raw document content for direct access
         full_text = "\n\n".join([doc.page_content for doc in raw_docs])
         st.session_state.document_contents[uploaded_file.name] = full_text
+        
+        # Get document metadata to display to user
+        file_size = os.path.getsize(temp_path) / 1024  # size in KB
+        num_pages = len(raw_docs)
         
         # Chunk documents
         text_processor = RecursiveCharacterTextSplitter(
@@ -37,19 +139,32 @@ def process_pdf_file(uploaded_file, vector_store):
         for chunk in document_chunks:
             if "source" not in chunk.metadata:
                 chunk.metadata["source"] = uploaded_file.name
+            
+            # Add file type for better context
+            chunk.metadata["file_type"] = file_extension.replace('.', '')
         
         # Add to vector store
         vector_store.add_documents(document_chunks)
         
-        # Clean up the temporary file
-        os.remove(temp_path)
+        # Return processing stats
+        return {
+            "chunks": len(document_chunks),
+            "file_size_kb": round(file_size, 2),
+            "pages_or_sections": num_pages,
+            "file_type": file_extension.replace('.', '').upper()
+        }
         
-        return len(document_chunks)
     except Exception as e:
+        raise Exception(f"Error processing document: {str(e)}")
+        
+    finally:
+        # Clean up temporary files
         if os.path.exists(temp_path):
             os.remove(temp_path)
-        st.error(f"Error processing PDF: {str(e)}")
-        return 0
+        try:
+            os.rmdir(temp_dir)
+        except:
+            pass  # Directory might not be empty if other temp files were created
 
 def query_documents(query: str) -> str:
     """Query the vector store for relevant document chunks"""
@@ -107,11 +222,12 @@ def query_documents(query: str) -> str:
             else:
                 return "No relevant information found in the uploaded documents."
         
-        # Create context from documents with source tracking
+        # Create context from documents with source tracking and file type
         doc_contexts = []
         for i, doc in enumerate(relevant_docs):
             source = doc.metadata.get("source", f"Document {i+1}")
-            doc_contexts.append(f"Document: {source}\nContent: {doc.page_content}")
+            file_type = doc.metadata.get("file_type", "unknown").upper()
+            doc_contexts.append(f"Document: {source} (Type: {file_type})\nContent: {doc.page_content}")
         
         context_text = "\n\n".join(doc_contexts)
         
@@ -133,13 +249,13 @@ def needs_document_search(query):
     """Determine if a document search is needed based on the query"""
     # Check for explicit request for document search
     document_patterns = [
-        "in the document", "from the pdf", "in the pdf", "document says",
+        "in the document", "from the file", "in the file", "document says",
         "check the document", "in the uploaded", "from the uploaded",
-        "the document mentions", "in my document", "in my pdf",
+        "the document mentions", "in my document", "in my file",
         "what does the document say about", "find in document",
         "tell me about the document", "summarize the document",
-        "what's in the pdf", "what is in the document",
-        "analyze the pdf", "analyze the document"
+        "what's in the file", "what is in the document",
+        "analyze the file", "analyze the document"
     ]
     
     query_lower = query.lower()
@@ -166,3 +282,10 @@ def needs_document_search(query):
     
     # Default to not using document search unless explicitly requested
     return False
+
+def get_supported_file_types():
+    """Return a list of supported file extensions"""
+    return [
+        "pdf", "txt", "md", "docx", "doc", "csv", "xlsx", 
+        "xls", "ppt", "pptx", "json", "yaml", "yml", "html", "htm", "log"
+    ]

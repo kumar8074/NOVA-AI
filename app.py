@@ -8,7 +8,7 @@ from langchain_core.messages import AIMessage, HumanMessage, SystemMessage
 # Import from local modules
 from config import CURRENT_DATE
 from utils.ui_utils import apply_custom_styling, initialize_session_state
-from utils.document_utils import process_pdf_file, query_documents, needs_document_search
+from utils.document_utils import process_document_file, query_documents, needs_document_search, get_supported_file_types
 from utils.search_utils import perform_web_search, needs_web_search
 from models.llm import initialize_llm, initialize_embeddings, initialize_vector_store, build_prompt_chain
 from prompts.templates import SYSTEM_TEMPLATE, SEARCH_INSTRUCTION_TEMPLATE, DOCUMENT_INSTRUCTION_TEMPLATE
@@ -21,7 +21,7 @@ initialize_session_state()
 
 # Set up the page
 st.title("NOVA")
-st.caption("Your AI Assistant with Document Intelligence")
+st.caption("Your AI Assistant with Multi-Document Intelligence")
 
 # Initialize LLM and embeddings
 llm_engine = initialize_llm()
@@ -56,8 +56,10 @@ with chat_container:
 # Display uploaded documents if any
 if st.session_state.uploaded_files:
     with st.expander("📚 Uploaded Documents"):
-        for file_name in st.session_state.uploaded_files:
-            st.write(f"- {file_name}")
+        for file_name, file_info in st.session_state.uploaded_file_info.items():
+            file_type = file_info.get("file_type", "Unknown")
+            file_size = file_info.get("file_size_kb", 0)
+            st.write(f"- {file_name} ({file_type}, {file_size} KB)")
 
 # Create a container for the upload button and chat input
 input_container = st.container()
@@ -76,39 +78,54 @@ with input_container:
         # Chat input
         user_query = st.chat_input("Ask NOVA...")
 
+# Get supported file types for the uploader
+supported_file_types = get_supported_file_types()
+
 # Show the file uploader when toggled
 if st.session_state.show_uploader:
-    uploaded_pdf = st.file_uploader(
-        "Upload PDF",
-        type="pdf",
-        key="pdf_uploader"
+    uploaded_file = st.file_uploader(
+        "Upload Document",
+        type=supported_file_types,
+        key="file_uploader"
     )
     
     # Process uploaded file
-    if uploaded_pdf and (st.session_state.last_uploaded_file != uploaded_pdf.name):
+    if uploaded_file and (st.session_state.last_uploaded_file != uploaded_file.name):
         with st.spinner("Processing document..."):
-            num_chunks = process_pdf_file(uploaded_pdf, st.session_state.vector_store)
-            
-            if num_chunks > 0:
-                # Update state
-                st.session_state.has_documents = True
-                if uploaded_pdf.name not in st.session_state.uploaded_files:
-                    st.session_state.uploaded_files.append(uploaded_pdf.name)
+            try:
+                # Process the document
+                processing_results = process_document_file(uploaded_file, st.session_state.vector_store)
                 
-                # Add system message about the upload
-                upload_message = f"📄 Document '{uploaded_pdf.name}' successfully uploaded and processed ({num_chunks} chunks). You can now ask questions about this document."
-                st.session_state.message_log.append({"role": "ai", "content": upload_message})
+                # Extract results
+                num_chunks = processing_results.get("chunks", 0)
+                file_type = processing_results.get("file_type", "UNKNOWN")
+                file_size = processing_results.get("file_size_kb", 0)
                 
-                # Update last uploaded file to prevent duplicate messages
-                st.session_state.last_uploaded_file = uploaded_pdf.name
+                # Store file info for display
+                st.session_state.uploaded_file_info[uploaded_file.name] = processing_results
                 
-                # Hide the uploader after successful upload
-                st.session_state.show_uploader = False
-                
-                # Rerun to update UI
-                st.rerun()
-            else:
-                st.error(f"Failed to process document '{uploaded_pdf.name}'. Please try again or use a different document.")
+                if num_chunks > 0:
+                    # Update state
+                    st.session_state.has_documents = True
+                    if uploaded_file.name not in st.session_state.uploaded_files:
+                        st.session_state.uploaded_files.append(uploaded_file.name)
+                    
+                    # Add system message about the upload
+                    upload_message = f"📄 Document '{uploaded_file.name}' successfully uploaded and processed ({num_chunks} chunks, {file_size} KB, {file_type}). You can now ask questions about this document."
+                    st.session_state.message_log.append({"role": "ai", "content": upload_message})
+                    
+                    # Update last uploaded file to prevent duplicate messages
+                    st.session_state.last_uploaded_file = uploaded_file.name
+                    
+                    # Hide the uploader after successful upload
+                    st.session_state.show_uploader = False
+                    
+                    # Rerun to update UI
+                    st.rerun()
+                else:
+                    st.error(f"Failed to process document '{uploaded_file.name}'. No content could be extracted.")
+            except Exception as e:
+                st.error(f"Failed to process document '{uploaded_file.name}': {str(e)}")
 
 # Handle user input
 if user_query:
