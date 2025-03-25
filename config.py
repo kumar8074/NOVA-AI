@@ -1,9 +1,6 @@
 import os
 import datetime
 from dotenv import load_dotenv
-from langchain_cohere import CohereEmbeddings
-from langchain_community.embeddings import HuggingFaceEmbeddings
-
 
 # Load environment variables
 load_dotenv()
