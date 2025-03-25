@@ -9,6 +9,8 @@
 
 ![NOVA Interface Screenshot](https://via.placeholder.com/800x450.png?text=NOVA+AI+Assistant+Interface)
 
+**Access the Deployed version of NOVA Here**: ![NOVA AI](https://nova-ai-v1.streamlit.app)
+
 ## ✨ Features
 
 - **Multi-Document Intelligence**
