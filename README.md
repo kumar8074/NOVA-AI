@@ -7,7 +7,6 @@
 
 **NOVA** is an advanced AI assistant with built-in multi-document intelligence and real-time web search capabilities. Designed for professionals, researchers, and curious minds, NOVA combines state-of-the-art language models with powerful document analysis tools.
 
-![NOVA Interface Screenshot](https://via.placeholder.com/800x450.png?text=NOVA+AI+Assistant+Interface)
 
 **Access the Deployed version of NOVA Here**: https://nova-ai-v1.streamlit.app
 
@@ -128,11 +127,15 @@ nova-ai-assistant/
 
 ### 🤝 Contributing
 We welcome contributions! Please follow these steps:
-    1. Fork the repository
-    2. Create your feature branch (git checkout -b feature/AmazingFeature)
-    3. Commit your changes (git commit -m 'Add some AmazingFeature')
-    4. Push to the branch (git push origin feature/AmazingFeature)
-    5. Open a Pull Request
+1. Fork the repository
+    
+2. Create your feature branch (git checkout -b feature/AmazingFeature)
+    
+3. Commit your changes (git commit -m 'Add some AmazingFeature')
+   
+4. Push to the branch (git push origin feature/AmazingFeature)
+   
+5. Open a Pull Request
 
 
 ### 📜 License
