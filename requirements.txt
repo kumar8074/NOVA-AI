@@ -9,3 +9,9 @@ tavily-python
 pdfplumber
 requests
 langchain_cohere
+unstructured 
+python-pptx 
+pandas 
+openpyxl 
+pyyaml
+langchain-unstructured

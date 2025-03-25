@@ -1,11 +1,16 @@
+import os
 from langchain_groq import ChatGroq
-from langchain_ollama import OllamaEmbeddings
+from langchain_cohere import CohereEmbeddings
+from langchain_community.embeddings import HuggingFaceEmbeddings
 from langchain_core.vectorstores import InMemoryVectorStore
 from langchain.tools import Tool
 from langchain_core.messages import AIMessage, HumanMessage, SystemMessage
-from config import GROQ_API_KEY, LLM_MODEL, EMBEDDING_MODEL
+from config import GROQ_API_KEY, LLM_MODEL, COHERE_API_KEY, HUGGINGFACE_API_KEY
 from utils.document_utils import query_documents
 from utils.search_utils import perform_web_search
+
+os.environ["COHERE_API_KEY"] = COHERE_API_KEY
+os.environ["HUGGING_FACE_API_KEY"] = HUGGINGFACE_API_KEY
 
 def initialize_llm():
     """Initialize the LLM engine"""
@@ -13,7 +18,10 @@ def initialize_llm():
 
 def initialize_embeddings():
     """Initialize the embedding model"""
-    return OllamaEmbeddings(model=EMBEDDING_MODEL)
+    try:
+        return CohereEmbeddings(model="embed-english-v3.0") 
+    except Exception:
+        return HuggingFaceEmbeddings(model_name="all-MiniLM-L6-v2")
 
 def initialize_vector_store(embedding_model):
     """Initialize the vector store"""
