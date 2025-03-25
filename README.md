@@ -1,6 +1,6 @@
 # 🌌 NOVA - Intelligent Multi-Document AI Assistant
 
-[![Streamlit](https://static.streamlit.io/badges/streamlit_badge_black_white.svg)](https://your-nova-app.streamlit.app/)
+[![Streamlit](https://static.streamlit.io/badges/streamlit_badge_black_white.svg)](https://nova-ai-v1.streamlit.app/)
 ![LLM Powered](https://img.shields.io/badge/LLM-Powered-blueviolet)
 ![Multi-Document](https://img.shields.io/badge/Multi-Document-Analysis-success)
 ![Real-Time Search](https://img.shields.io/badge/Real--Time-Web%20Search-important)
