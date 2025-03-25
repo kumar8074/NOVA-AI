@@ -1,0 +1,11 @@
+langchain
+langchain-community
+langchain_groq
+langchain_ollama
+langgraph
+python-dotenv
+streamlit
+tavily-python
+pdfplumber
+requests
+langchain_cohere
