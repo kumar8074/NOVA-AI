@@ -5,13 +5,13 @@ from langchain_community.embeddings import HuggingFaceEmbeddings
 from langchain_core.vectorstores import InMemoryVectorStore
 from langchain.tools import Tool
 from langchain_core.messages import AIMessage, HumanMessage, SystemMessage
-from config import GROQ_API_KEY, LLM_MODEL, COHERE_API_KEY, HUGGINGFACE_API_KEY, GOOGLE_API_KEY
+from config import GROQ_API_KEY, LLM_MODEL, COHERE_API_KEY, HUGGINGFACE_API_KEY, GEMINI_API_KEY
 from utils.document_utils import query_documents
 from utils.search_utils import perform_web_search
 
 os.environ["COHERE_API_KEY"] = COHERE_API_KEY
 os.environ["HUGGING_FACE_API_KEY"] = HUGGINGFACE_API_KEY
-os.environ["GEMINI_API_KEY"]=GOOGLE_API_KEY
+os.environ["GEMINI_API_KEY"]=GEMINI_API_KEY
 
 def initialize_llm():
     """Initialize the LLM engine"""
