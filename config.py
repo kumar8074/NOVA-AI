@@ -13,7 +13,7 @@ HUGGINGFACE_API_KEY = os.getenv("HUGGINGFACE_API_KEY")
 GEMINI_API_KEY=os.getenv("GOOGLE_API_KEY")
 
 # Model settings
-LLM_MODEL = "Deepseek-R1-Distill-Qwen-32b"
+LLM_MODEL = "gemini-2.0-flash"
 
 
 # Get current date
