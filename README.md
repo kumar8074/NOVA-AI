@@ -146,3 +146,4 @@ Distributed under the MIT License. See LICENSE for more information.
 - Tavily for real-time web search API
 - LangChain team for document processing tools
 - Streamlit for interactive UI framework
+- Developed by [Lalan Kumar](https://github.com/kumar8074)
