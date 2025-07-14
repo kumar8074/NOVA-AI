@@ -1,27 +1,29 @@
 import os
 from langchain_groq import ChatGroq
-from langchain_cohere import CohereEmbeddings
 from langchain_community.embeddings import HuggingFaceEmbeddings
 from langchain_core.vectorstores import InMemoryVectorStore
 from langchain.tools import Tool
 from langchain_core.messages import AIMessage, HumanMessage, SystemMessage
-from config import GROQ_API_KEY, LLM_MODEL, COHERE_API_KEY, HUGGINGFACE_API_KEY, GEMINI_API_KEY
+from config import GROQ_API_KEY, LLM_MODEL, HUGGINGFACE_API_KEY, GEMINI_API_KEY
 from utils.document_utils import query_documents
 from utils.search_utils import perform_web_search
-from langchain_google_genai import ChatGoogleGenerativeAI
+from langchain_google_genai import ChatGoogleGenerativeAI, GoogleGenerativeAIEmbeddings
 
-os.environ["COHERE_API_KEY"] = COHERE_API_KEY
+os.environ["GROQ_API_KEY"] = GROQ_API_KEY
 os.environ["HUGGING_FACE_API_KEY"] = HUGGINGFACE_API_KEY
 os.environ["GEMINI_API_KEY"]=GEMINI_API_KEY
 
 def initialize_llm():
     """Initialize the LLM engine"""
-    return ChatGoogleGenerativeAI(model=LLM_MODEL)
+    try:
+        return ChatGoogleGenerativeAI(model=LLM_MODEL)
+    except Exception:
+        return ChatGroq(model="deepseek-r1-distill-llama-70b")
 
 def initialize_embeddings():
     """Initialize the embedding model"""
     try:
-        return CohereEmbeddings(model="embed-english-v3.0") 
+        return GoogleGenerativeAIEmbeddings(model="models/text-embedding-004") 
     except Exception:
         return HuggingFaceEmbeddings(model_name="all-MiniLM-L6-v2")
 
