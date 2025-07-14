@@ -35,7 +35,6 @@
 - API keys for:
   - [Groq](https://console.groq.com/)
   - [Tavily](https://tavily.com/)
-  - [Cohere](https://dashboard.cohere.com/) 
   - [HuggingFace](https://huggingface.co/settings/tokens) 
 
 ### Installation
